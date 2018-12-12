@@ -4,6 +4,8 @@ from controller import *
 from util import *
 
 
+
+
 # get the trajectory
 traj = get_trajectory('buggyTrace.csv')
 # initial the Buggy
@@ -19,14 +21,38 @@ phid = []
 deltad = []
 F = []
 minDist =[]
+forward = 20
+vD = 5
+prevDelta = 0
+eV = vD - 0
 '''
 your code starts here
 '''
 # preprocess the trajectory
 passMiddlePoint = False
 nearGoal = False
+ctrl = Controller(traj, vehicle, vD)
 for i in range(n):
-    command = controller()
+    
+    _, idx = closest_node(vehicle.state.X, vehicle.state.Y, traj)
+    currentPos = [vehicle.state.X, vehicle.state.Y]
+    e1 = (traj[idx, 0] - currentPos[0]) / np.sin(vehicle.state.phi)
+    
+    trakLenth = len(traj)
+    ahead = idx + forward
+    if (ahead >= trakLenth):
+        ahead = trakLenth - 1
+        
+    aheadPos = traj[ahead, :]
+    posDifference = aheadPos - currentPos
+    desiredPsi = wrap2pi(np.arctan2(posDifference[1], posDifference[0]))
+    e2 = wrap2pi(vehicle.state.phi) - desiredPsi
+    e1d = vehicle.state.yd + vehicle.state.xd * e2
+    e2d = vehicle.state.phid - vehicle.state.xd * ctrl.curvatureK[ahead]
+    deltaD, force, deltaPrev = ctrl.getController(e1, e1d, e2, e2d, eV, prevDelta)
+    command = vehicle.command(force, deltaD)
+    eV = vD - vehicle.state.xd
+    
     vehicle.update(command = command)
 
 

@@ -4,6 +4,7 @@ from controller import *
 from util import *
 from BuggySimulator import vehicle
 from util import wrap2pi
+from scipy.ndimage import gaussian_filter1d
 from Evaluation import *
 
 '''
@@ -35,8 +36,8 @@ Iz = vehicle.Iz
 f = vehicle.f
 m = vehicle.m
 g = vehicle.g
-Vx = 4.2       # random vehicle speed
-forward = 25
+Vx = 6     # random vehicle speed
+forward = 90
 evPrev = 0.0
 
 '''
@@ -79,18 +80,20 @@ B = np.matrix([[0],
                [0],
                [B4]])
 
-Q = np.matrix([[18,    0,  0,  0],
-               [0,      10, 0,  0],
-               [0,      0,  25,  0],
-               [0,      0,  0,  0.01]])
+Q = np.matrix([[1,    0,  0,  0],
+               [0,     10, 0,  0],
+               [0,      0,  1,  0],
+               [0,      0,  0,  25]])
 
-R = np.matrix([[0.9]])
+R = np.matrix([[0.4]])
 
 K, S, E = lqr(A, B, Q, R)
 
 firstDev = np.gradient(traj, axis = 0)
+firstDev = gaussian_filter1d(firstDev,2)
 secondDev = np.gradient(firstDev, axis = 0)
-kNum = np.abs((firstDev[:,0] * secondDev[:,1]) - (firstDev[:,1] * secondDev[:,0]))
+secondDevDev = gaussian_filter1d(secondDev,2)
+kNum = ((firstDev[:,0] * secondDev[:,1]) - (firstDev[:,1] * secondDev[:,0]))
 kDen = np.power(np.square(firstDev[:,0]) + np.square(firstDev[:,1]), 3/2)
 KCurve = kNum / kDen
 
@@ -102,11 +105,6 @@ deltaPrev = 0
 passMiddlePoint = False
 nearGoal = False
 
-def findOrthVec(vec):
-    x = vec[0]
-    y = vec[1]
-    toReturn = [-1 * y, x]
-    return toReturn
 
 for i in range(n):
     _ , idx = closest_node(vehicle.state.X, vehicle.state.Y, traj)
@@ -127,7 +125,7 @@ for i in range(n):
     #normVec = findOrthVec(firstDev[idx])
     
     #normVec = normVec / np.linalg.norm(normVec)
-    e1 = np.dot(diffPos, normalVec)
+    e1 = np.inner(diffPos, normalVec)
     
     print(e1)
     #print(idx)
@@ -143,7 +141,7 @@ for i in range(n):
     e2d = vehicle.state.phid - vehicle.state.xd * KCurve[ahead]
     eV = Vx - vehicle.state.xd
     Fout, currDeltad, deltaPrev = controller(e1, e1d, e2, e2d, K, eV, evPrev, deltaPrev)
-    #print(Fout)
+   
     command = vehicle.command(Fout, currDeltad)
     vehicle.update(command = command)
     evPrev = -(vehicle.state.xd - Vx)
