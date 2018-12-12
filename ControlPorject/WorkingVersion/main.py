@@ -175,5 +175,5 @@ showResult(traj,X,Y,delta,xd,yd,F,phi,phid,minDist)
 
 toReturn = np.array([xd, yd, phid, delta, X, Y, phi]).T
 np.save("24-677_Project_2_BuggyStates_Qiaojie.npy", toReturn)
-taskNum = 2
+taskNum = 3
 evaluation(minDist, traj, X, Y, taskNum)
