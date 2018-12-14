@@ -25,7 +25,7 @@ def controller(e1, e1d, e2, e2d, K, eV, evPrev, deltaPrev):
     e2: error in yaw angle, the current desired yaw angle - current angle
     """
     # pd controller for calculating F
-    kp = 150
+    kp = 185
     kd = 0
     toReturn_F = kp * eV + kd * (eV - evPrev)
     

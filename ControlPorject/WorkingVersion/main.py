@@ -36,8 +36,8 @@ Iz = vehicle.Iz
 f = vehicle.f
 m = vehicle.m
 g = vehicle.g
-Vx = 6     # random vehicle speed
-forward = 90
+    # random vehicle speed
+forward = 130
 evPrev = 0.0
 
 '''
@@ -61,6 +61,7 @@ def lqr(A, B, Q, R):
  
     return K, X, eigVals
 
+Vx = 8.3
 A22 = -4 * Ca / (m * Vx)
 A23 = 4 * Ca / m
 A24 = 2 * Ca * (lr - lf) / (m * Vx)
@@ -85,7 +86,7 @@ Q = np.matrix([[1,    0,  0,  0],
                [0,      0,  1,  0],
                [0,      0,  0,  25]])
 
-R = np.matrix([[0.4]])
+R = np.matrix([[1]])
 
 K, S, E = lqr(A, B, Q, R)
 
@@ -98,7 +99,7 @@ kDen = np.power(np.square(firstDev[:,0]) + np.square(firstDev[:,1]), 3/2)
 KCurve = kNum / kDen
 
 #psiDes = np.arctan(firstDev[:,1]/firstDev[:,0])
-psidDes = Vx * KCurve
+
 
 deltaPrev = 0
 # preprocess the trajectory
@@ -107,12 +108,15 @@ nearGoal = False
 
 
 for i in range(n):
+    Vx = 8.3
     _ , idx = closest_node(vehicle.state.X, vehicle.state.Y, traj)
     
     if (idx + forward >= len(KCurve)):
         ahead = idx + forward - len(KCurve)
     else:
         ahead = idx + forward
+        
+    
         
     currentPos = [vehicle.state.X, vehicle.state.Y]
     #desiredPos = traj[ahead,:]
@@ -135,12 +139,12 @@ for i in range(n):
     aheadPos = traj[ahead]
     aheadDiff = (aheadPos - currentPos)
     psiDes = np.arctan2(aheadDiff[1], aheadDiff[0])  
-    e2 = wrap2pi(vehicle.state.phi) - (psiDes)
+    e2 = wrap2pi(vehicle.state.phi - psiDes)
     #e2 = wrap2pi(vehicle.state.phi) - psiDesired  
     e1d = vehicle.state.yd + vehicle.state.xd * e2
     e2d = vehicle.state.phid - vehicle.state.xd * KCurve[ahead]
     eV = Vx - vehicle.state.xd
-    Fout, currDeltad, deltaPrev = controller(e1, e1d, e2, e2d, K, eV, evPrev, deltaPrev)
+    Fout, currDeltad, deltaPrev = controller(e1, e1d, e2, e2d, K, eV, evPrev, vehicle.state.delta)
    
     command = vehicle.command(Fout, currDeltad)
     vehicle.update(command = command)
